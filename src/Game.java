@@ -9,22 +9,33 @@ public class Game extends Canvas implements Runnable {
 	private static final long serialVersionUID = -1442798787354930462L;
 	private Thread thread;
 	private boolean running = false;
-	
+	private Menu menu;
 	private Random r= new Random(); 
+	
 	
 	private Handler handler;
 	private HUD hud;
+	private Spawn spawner;
+	
+	
+	
+	public STATE gameState = STATE.Menu;
 	
 	public Game() {
 		handler = new Handler();
+		menu = new Menu(this, handler);
 		this.addKeyListener(new KeyInput(handler));
+		this.addMouseListener(menu);
 		
-		new Window(WIDTH, HEIGHT, "Let's Build a Game!", this);
+		new Window(WIDTH, HEIGHT, "Adventure", this);
 		
 		hud = new HUD();
+		spawner = new Spawn(handler, hud);
 		
-		handler.addObject(new Player(WIDTH/2-32, HEIGHT/2-32 , ID.Player));	
-		handler.addObject(new BasicEnemy(r.nextInt(WIDTH), r.nextInt(HEIGHT) , ID.BasicEnemy));
+		if(gameState == STATE.Game) {
+		handler.addObject(new Player(WIDTH/2-32, HEIGHT/2-32 , ID.Player, handler));	
+		handler.addObject(new BasicEnemy((r.nextInt(Game.WIDTH)), (r.nextInt(Game.HEIGHT)), ID.BasicEnemy, handler));
+		}
 		
 		
 	}
@@ -72,7 +83,14 @@ public class Game extends Canvas implements Runnable {
 	}
 	private void tick() {
 		handler.tick();
-		hud.tick();
+		if(gameState == STATE.Game) {
+			hud.tick();
+			spawner.tick();
+		}
+		else if(gameState == STATE.Menu) {
+			menu.tick();
+		}
+		
 	}
 	private void render() {
 		BufferStrategy bs = this.getBufferStrategy();
@@ -84,15 +102,19 @@ public class Game extends Canvas implements Runnable {
 		
 		g.setColor(Color.black);
 		g.fillRect(0, 0, WIDTH, HEIGHT);
-		
 		handler.render(g);
+		if(gameState == STATE.Game) {
 		hud.render(g);
+		}
+		else if(gameState == STATE.Menu || gameState == STATE.Help) {
+			menu.render(g);
+		}
 		
 		g.dispose();
 		bs.show();
 	}
 	
-	public static int clamp(int var, int min, int max) {
+	public static float clamp(float var, float min, float max) {
 		if(var>=max)
 			return var = max;
 		else if(var<=min) {
